@@ -3,7 +3,7 @@ library(tidyverse)
 library(vegan)
 
 ##Filter out just the data we want to use
-CatCount=read_csv("C:/Users/jaspe/OneDrive/Documents/PhD/Coursework/Spring 2021 Courses/BIOL 7970 Teaching/Module/CaterpillarsCountData/CaterpillarsCountData.csv")%>%
+CatCount=read_csv("CaterpillarsCountData.csv")%>%
     select(SiteName,Region,LocalDate,SurveyLocationCode,OfficialPlantSpecies,UpdatedArthropodGroup,ArthropodQuantity) %>%
     replace(is.na(.),0) %>% filter(UpdatedArthropodGroup != "none")
 
