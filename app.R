@@ -3,9 +3,10 @@ library(tidyverse)
 library(vegan)
 
 ##Filter out just the data we want to use
-CatCount=read_csv("C:/Users/jaspe/OneDrive/Documents/PhD/Coursework/Spring 2021 Courses/BIOL 7970 Teaching/Module/CaterpillarsCountData/CaterpillarsCountData.csv")%>%
+CatCount=read_csv("CaterpillarsCountData.csv")%>%
     select(SiteName,Region,LocalDate,SurveyLocationCode,OfficialPlantSpecies,UpdatedArthropodGroup,ArthropodQuantity) %>%
-    replace(is.na(.),0) %>% filter(UpdatedArthropodGroup != "none")
+    replace(is.na(.),0) %>% filter(UpdatedArthropodGroup != "none") %>%
+    filter(Region != "ON")
 
 ##Get site-specific species richness
 CatDiv=CatCount %>%
@@ -38,12 +39,29 @@ ui <- fluidPage(
 
     # Application title
     titlePanel("Beta-Diversity of Bugs"),
+    p("Measuring patterns in diversity is crucial in understanding how ecosystems 
+                       function and the importance of certain species across the landscape. 
+                       These measurements largely stem from the number of species found in a 
+                       local area (alpha-diversity) and differences between the species found in 
+                       multiple communities (beta-diversity)."),
+    p("The data for this app comes from Caterpillars Count!, a community science program whose goal 
+                        is to measure phenology, or the seasonal variation, of arthropods. A subset 
+                        of the data is included in this app, focusing on the state where the data 
+                        was collected and the most commonhost plants that were sampled. You can 
+                        find more information at the project website:"),
+    p(a(href="https://caterpillarscount.unc.edu/", "https://caterpillarscount.unc.edu/")),
+    p("This app is part of a teaching module created by Jasper S. Leavitt at East Carolina 
+                        University. The goal is to allow students to change the features being 
+                        compared to see how beta-diversity changes based on outside variables. 
+                        The code can be found here: "),
+    p(a(href="https://github.com/leavittj/BIOL7970Module", 
+                        "https://github.com/leavittj/BIOL7970Module")),
 
     ## Sidebar with our two variables we can test 
     sidebarLayout(
         sidebarPanel(
             radioButtons("variable",
-                        "Variable Being Tested",
+                        "Choose a feature to focus on:",
                         choices=c(State="Region",
                           Plant="OfficialPlantSpecies")
             ),
@@ -51,13 +69,14 @@ ui <- fluidPage(
         conditionalPanel(
             condition="input.variable=='Region'",
             checkboxGroupInput("treat",
-                               "Select at least 2 treatments",
-                               sort(unique(CatDiv$Region)))
+                               "Select the states you want to compare:",
+                               sort(unique(CatDiv$Region))
+                               )
             ),
         conditionalPanel(
             condition="input.variable=='OfficialPlantSpecies'",
             checkboxGroupInput("treat2",
-                               "Select at least 2 treatments",
+                               "Select the host plants you want to compare:",
                                sort(unique(CatPlant$OfficialPlantSpecies)))
             )
         
@@ -66,8 +85,14 @@ ui <- fluidPage(
         mainPanel(
            plotOutput("divPlot"),
            dataTableOutput("divData")
-        ),
+        )
     
+    ),
+    ##Suppresses initial warning message about renaming columns that don't exist 
+    #(comes up when there aren't any options selected yet)
+    tags$style(type="text/css",
+               ".shiny-output-error { visibility: hidden; }",
+               ".shiny-output-error:before { visibility: hidden; }"
     )
 )
 
@@ -108,7 +133,9 @@ server <- function(input, output) {
             Statedf = do.call("rbind", Statelist)
             Statedf = Statedf %>% as_tibble(.name = Beta.Diversity) %>%
                 rename(`Beta-Diversity` = V2) %>%
-                rename(`State` = V1)
+                rename(State = V1) %>%
+                mutate_at(2, funs(as.numeric)) %>%
+                mutate_at(2, round, 3)
             
         } else {
             Plantlist = list()
@@ -120,7 +147,9 @@ server <- function(input, output) {
             Plantdf = do.call("rbind", Plantlist)
             Plantdf = Plantdf %>% as_tibble(.name = Beta.Diversity) %>%
                 rename(`Beta-Diversity` = V2) %>%
-                rename(`Host Plant` = V1)
+                rename(`Host Plant` = V1) %>%
+                mutate_at(2, funs(as.numeric)) %>%
+                mutate_at(2, round, 3)
         }
     })
 }
